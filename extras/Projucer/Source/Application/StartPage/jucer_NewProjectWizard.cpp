@@ -35,6 +35,7 @@
 #include "../jucer_Headers.h"
 #include "../jucer_Application.h"
 #include "../../ProjectSaving/jucer_ProjectExporter.h"
+#include "juce_core/juce_core.h"
 
 #include "jucer_NewProjectWizard.h"
 
@@ -203,6 +204,50 @@ static bool addFiles (Project& project, const NewProjectTemplates::ProjectTempla
     return true;
 }
 
+static bool addVSCodeTasksFile (Project& project)
+{
+    auto projectFolder = project.getFile().getParentDirectory();
+    auto vscodeFolder = projectFolder.getChildFile (".vscode");
+    auto tasksFile = vscodeFolder.getChildFile ("tasks.json");
+
+    // Don't overwrite an existing VS Code configuration.
+    if (tasksFile.existsAsFile())
+        return true;
+
+    if (! vscodeFolder.createDirectory())
+        return false;
+
+    const String tasksJson =
+        "{\n"
+        "    \"version\": \"2.0.0\",\n"
+        "    \"tasks\": [\n"
+        "        {\n"
+        "            \"label\": \"Generate compile_commands.json\",\n"
+        "            \"type\": \"shell\",\n"
+        "            \"command\": \"if [ ! -f \\\"${workspaceFolder}/compile_commands.json\\\" ]; then bear -- make all; fi\",\n"
+        "            \"options\": {\n"
+        "                \"cwd\": \"${workspaceFolder}\"\n"
+        "            },\n"
+        "            \"runOptions\": {\n"
+        "                \"runOn\": \"folderOpen\"\n"
+        "            },\n"
+        "            \"problemMatcher\": []\n"
+        "        }\n"
+        "    ]\n"
+        "}\n";
+
+    return tasksFile.replaceWithText (tasksJson);
+}
+
+static void addVSCodeConfiguration (Project& project, StringArray& failedFiles)
+{
+    if (! addVSCodeTasksFile (project))
+                    failedFiles.add (project.getFile().getParentDirectory()
+                             .getChildFile (".vscode")
+                             .getChildFile ("tasks.json")
+                             .getFullPathName());
+}
+
 static void addModules (Project& project, Array<var> modules, const String& modulePath, bool useGlobalPath)
 {
     AvailableModulesList list;
@@ -300,6 +345,8 @@ ScopedMessageBox NewProjectWizard::createNewProject (const NewProjectTemplates::
         {
             addExporters (*project, *exporters.getArray());
             addModules   (*project, *modules.getArray(), modulePath, useGlobalModulePath);
+
+            addVSCodeConfiguration(*project, failedFiles);
 
             auto sharedProject = std::make_shared<std::unique_ptr<Project>> (std::move (project));
             (*sharedProject)->saveAsync (false, true, [sharedProject, failedFiles, callback] (FileBasedDocument::SaveResult r)

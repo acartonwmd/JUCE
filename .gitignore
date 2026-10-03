@@ -70,3 +70,5 @@ extras/Projucer/JUCECompileEngine.dylib
 CMakeUserPresets.json
 .editorconfig
 
+update.fish
+compile_commands.json
