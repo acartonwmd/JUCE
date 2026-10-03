@@ -224,7 +224,7 @@ static bool addVSCodeTasksFile (Project& project)
         "        {\n"
         "            \"label\": \"Generate compile_commands.json\",\n"
         "            \"type\": \"shell\",\n"
-        "            \"command\": \"if [ ! -f \\\"${workspaceFolder}/compile_commands.json\\\" ]; then bear -- make all; fi\",\n"
+        "            \"command\": \"if [ ! -f \\\"${workspaceFolder}/compile_commands.json\\\" ]; then cd ${workspaceFolder}/Builds/LinuxMakefile; bear -- make all; fi\",\n"
         "            \"options\": {\n"
         "                \"cwd\": \"${workspaceFolder}\"\n"
         "            },\n"
